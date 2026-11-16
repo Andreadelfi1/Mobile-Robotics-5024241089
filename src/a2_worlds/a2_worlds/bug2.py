@@ -43,7 +43,7 @@ from visualization_msgs.msg import Marker, MarkerArray
 
 # ======================= SET THESE FIVE, THEN REBUILD =======================
 Y0 = 0.20            # YOUR start offset: 0.10 * (NRP % 5) - 0.20
-MODE = 'test'        # 'test' = go_and_stop (given) | 'bug2' = yours
+MODE = 'bug2'        # 'test' = go_and_stop (given) | 'bug2' = yours
 RUN_NAME = 'w1'      # names the CSV for this run: w1, w2, w3, w1_naive, ...
 HAND = +1            # contour following: +1 = wall on your left, -1 = right
 DELTA = 0.25         # progress margin, metres. Set to -1e6 for the naive run
@@ -246,16 +246,20 @@ class Bug2(Node):
         x, y, yaw = self.pose
 
         if self.state == 'GOAL_SEEK':
-            # TODO 1 -- drive along the m-line toward the goal.
-            #   Proportional control on self.goal_bearing(x, y, yaw); go slowly
-            #   while the error is large, at SPEED once you are pointing right.
-            #
-            # TODO 2 -- when self.front < HIT_RANGE you have hit something.
-            #   Latch the hit point: self.hit = self.report_hit() gives you the
-            #   correct H, and you must also store self.d_hit = d(H, goal) and
-            #   call self.set_state('WALL_FOLLOW') and self.mark('hit', hx, hy).
-            #   d(H, goal) must be stored NOW and left alone until you leave.
-            return 0.0, 0.0
+            # TODO 2 -- hit: something is closer than HIT_RANGE straight ahead
+            if self.front < HIT_RANGE:
+                hx, hy = self.report_hit()          # H on the robot body
+                self.hit = (hx, hy)
+                self.d_hit = self.d_goal(hx, hy)    # latched NOW, unchanged until we leave
+                self.mark('hit', hx, hy)
+                self.set_state('WALL_FOLLOW')
+                return 0.0, 0.0
+
+            # TODO 1 -- follow the m-line: proportional control on heading error
+            err = self.goal_bearing(x, y, yaw)
+            v = SPEED if abs(err) < 0.30 else 0.03
+            w = K_HEADING * err
+            return v, w
 
         # ---- WALL_FOLLOW ----
         # TODO 4 -- the leave condition. BOTH tests, or it does not work:
