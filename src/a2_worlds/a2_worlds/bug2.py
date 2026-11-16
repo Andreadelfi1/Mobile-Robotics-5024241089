@@ -262,22 +262,21 @@ class Bug2(Node):
             return v, w
 
         # ---- WALL_FOLLOW ----
-        # TODO 4 -- the leave condition. BOTH tests, or it does not work:
-        #       abs(self.d_mline(x, y)) < EPS
-        #   AND self.d_goal(x, y) < self.d_hit - DELTA
-        #   The first alone is true at H itself, so a controller that leaves on
-        #   it alone leaves immediately, hits again, and loops forever -- in
-        #   all three worlds, not just the concave one. On leaving: call
-        #   self.mark('leave', x, y), clear self.hit/self.d_hit, and
-        #   self.set_state('GOAL_SEEK').
-        #
-        # TODO 3 -- otherwise follow the contour at WALL_DIST, three cases:
-        #     something close ahead     -> turn away, do not drive forward
-        #     the wall is too far       -> curve toward it
-        #     the wall is too close     -> curve away from it
-        #   The error is self.side() - WALL_DIST, and HAND (+1 or -1) is the
-        #   sign flip that makes one piece of code work for either side.
-        return 0.0, 0.0
+        # TODO 4 -- leave condition: BOTH tests
+        if (abs(self.d_mline(x, y)) < EPS
+                and self.d_goal(x, y) < self.d_hit - DELTA):
+            self.mark('leave', x, y)
+            self.hit = self.d_hit = None
+            self.set_state('GOAL_SEEK')
+            return 0.0, 0.0
+
+        # TODO 3 -- contour following, wall on the side HAND selects
+        V_WALL, K_WALL, TURN = 0.10, 2.5, 0.8
+        if self.front < HIT_RANGE:                 # blocked ahead: turn away
+            return 0.0, -HAND * TURN
+        err = self.side() - WALL_DIST              # + too far, - too close
+        err = max(-0.3, min(0.3, err))             # no wall (inf) -> +0.3
+        return V_WALL, HAND * K_WALL * err
 
     def set_state(self, s):
         if s != self.state:
