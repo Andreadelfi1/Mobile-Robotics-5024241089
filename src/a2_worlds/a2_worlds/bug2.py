@@ -42,7 +42,7 @@ from sensor_msgs.msg import LaserScan
 from visualization_msgs.msg import Marker, MarkerArray
 
 # ======================= SET THESE FIVE, THEN REBUILD =======================
-Y0 = 0.10            # YOUR start offset: 0.10 * (NRP % 5) - 0.20
+Y0 = 0.20            # YOUR start offset: 0.10 * (NRP % 5) - 0.20
 MODE = 'test'        # 'test' = go_and_stop (given) | 'bug2' = yours
 RUN_NAME = 'w1'      # names the CSV for this run: w1, w2, w3, w1_naive, ...
 HAND = +1            # contour following: +1 = wall on your left, -1 = right
