@@ -250,6 +250,7 @@ class Bug2(Node):
             if self.front < HIT_RANGE:
                 hx, hy = self.report_hit()          # H on the robot body
                 self.hit = (hx, hy)
+                self.away = False                   # not yet moved away from H
                 self.d_hit = self.d_goal(hx, hy)    # latched NOW, unchanged until we leave
                 self.mark('hit', hx, hy)
                 self.set_state('WALL_FOLLOW')
@@ -268,6 +269,15 @@ class Bug2(Node):
             self.mark('leave', x, y)
             self.hit = self.d_hit = None
             self.set_state('GOAL_SEEK')
+            return 0.0, 0.0
+
+        # Safeguard -- back at H after travelling away from it, and the leave
+        # condition never fired: the goal is enclosed, so give up.
+        dh = math.hypot(x - self.hit[0], y - self.hit[1])
+        if dh > 1.0:
+            self.away = True
+        elif self.away and dh < 0.3:
+            self.finish('GOAL UNREACHABLE: back at the hit point H without progress')
             return 0.0, 0.0
 
         # TODO 3 -- contour following, wall on the side HAND selects
